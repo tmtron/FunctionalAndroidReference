@@ -72,8 +72,9 @@ public class Injector {
 
         Timber.plant(new Timber.DebugTree());
 
-        TinyDancer.create()
-                .show(application);
+        // FIXME: deactivated because will only ask for permissions the first time after installation
+        // next time, the app will crash
+        //TinyDancer.create().show(application);
 
     }
 

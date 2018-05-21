@@ -32,7 +32,7 @@ handleOnCommitDelete()
 
 Removes all selected elements after the edit mode changes back from editing to normal 
 
-handleOnSwitchEditState()
+handleEnterEditStateSelectLongClickedItem()
 
 Handles adding or removing the set of selected elements when the edit mode changes
 

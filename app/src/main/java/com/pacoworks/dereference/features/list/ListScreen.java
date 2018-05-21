@@ -54,8 +54,6 @@ public class ListScreen extends BaseController implements ListExampleView {
 
     private final PublishRelay<Pair<Integer, String>> longClicksPRelay = PublishRelay.create();
 
-    private final PublishRelay<Pair<Integer, Integer>> dragAndDropPRelay = PublishRelay.create();
-
     private final PublishRelay<None> addPRelay = PublishRelay.create();
 
     private final PublishRelay<None> deletePRelay = PublishRelay.create();
@@ -106,12 +104,6 @@ public class ListScreen extends BaseController implements ListExampleView {
     @Override
     public Observable<Pair<Integer, String>> listLongClicks() {
         return longClicksPRelay.asObservable();
-    }
-
-    @NotNull
-    @Override
-    public Observable<Pair<Integer, Integer>> dragAndDropMoves() {
-        return dragAndDropPRelay.asObservable();
     }
 
     @Override

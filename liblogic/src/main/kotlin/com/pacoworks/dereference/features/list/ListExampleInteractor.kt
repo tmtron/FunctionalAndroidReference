@@ -50,60 +50,64 @@ fun subscribeListExampleInteractor(viewOutput: ListExampleOutputView, state: Lis
                 handleEnterEditState(viewOutput.listLongClicks(), state.editMode),
                 handleExitEditState(viewOutput.deleteClick(), state.editMode),
                 handleOnCommitDelete(state.editMode, state.elements, state.selected),
-                /* FIXME: Must be after handleOnCommitDelete to assure that selections are not cleared before they're deleted */
-                handleOnSwitchEditState(state.editMode, state.selected),
+                handleEnterEditStateSelectLongClickedItem(state.editMode, state.selected),
                 handleSelect(state.editMode, state.selected, viewOutput.listClicks()))
 
 fun handleAdd(elementsState: StateHolder<List<String>>, addClick: Observable<None>): Subscription =
+        // switch map -
+        // "recursive" state? we use elementState as source and also subscribe to it
         doSM(
                 /* For the current list of elements */
                 { elementsState },
-                /* When the user clicks add */
+                /* wait until the user clicks add */
                 { addClick.first() },
                 { elements, click ->
                     /* Insert random number at end of the list */
                     Observable.just(elements.plus((Math.abs(Random().nextInt()) + elements.size).toString()))
                 }
         )
+                // push the new state into element state
                 .subscribe(elementsState)
 
 fun handleEnterEditState(listLongClicks: Observable<Pair<Int, String>>, editMode: StateHolder<EditMode>): Subscription =
+        // flatMap
         doFM(
                 /* When the user clicks on the list with a long press */
                 { listLongClicks },
-                /* And the mode is not edit */
+                /* get the most recent edit mode */
                 { editMode.first() },
-                { click, editMode ->
-                    editMode.join(
-                        /* Push edit mode with the position pressed */
+                { click, editModeUnion ->
+                    editModeUnion.join(
+                        /* when the current state is normal (Add-button), then change to delete mode and pass
+                           the list-id of the item that was pressed
+                         */
                         { normal -> Observable.just(createEditModeDelete(click.value1)) },
-                        /* Else ignore */
+                        /* Else ignore - we are already in edit state (Delete-button is shown) */
                         { delete -> Observable.empty<EditMode>() }) }
         ).subscribe(editMode)
 
 fun handleExitEditState(deleteClick: Observable<None>, editMode: StateHolder<EditMode>): Subscription =
         doFM(
-                /* When the user clicks onthe delete button*/
+                /* When the user clicks on the delete button*/
                 { deleteClick },
-                /* And the mode is editing */
+                /* get the edit-mode */
                 { editMode.first() },
                 { click, editMode ->
                     editMode.join(
-                            /* Ignore not editing */
+                            /* we are not in edit mode (e.g. Add-button is shown) */
                             { normal -> Observable.empty<EditMode>() },
-                            /* Push exiting edit mode */
+                            /* we are in edit mode - switch to normal (show Add-button) */
                             { delete -> Observable.just(createEditModeNormal()) })
                 }
         ).subscribe(editMode)
 
-fun handleOnSwitchEditState(editMode: StateHolder<EditMode>, selected: StateHolder<Set<String>>): Subscription =
-        /* When edit mode changes */
+fun handleEnterEditStateSelectLongClickedItem(editMode: StateHolder<EditMode>, selected: StateHolder<Set<String>>): Subscription =
+        /* When edit mode changes to deleted select the current item (that was long-clicked) */
         editMode
-                .map { it.join(
-                        /* If exiting delete mode, remove elements from selected */
-                        { normal -> setOf<String>() },
-                        /* If entering delete mode, add the long pressed value element to selected */
-                        { delete -> setOf(delete.id) }) }
+                .flatMap { it.join(
+                          {normal -> Observable.empty<Set<String>>()}
+                        , {deleted -> Observable.just(setOf(deleted.id))}
+                ) }
                 .subscribe(selected)
 
 fun handleOnCommitDelete(editMode: StateHolder<EditMode>, elementsState: StateHolder<List<String>>, selected: StateHolder<Set<String>>): Subscription =
@@ -116,9 +120,12 @@ fun handleOnCommitDelete(editMode: StateHolder<EditMode>, elementsState: StateHo
                 { exitEditMode, statePair ->
                     Observable.from(statePair.value0).filter { !statePair.value1.contains(it) }.toList()
                 }
-        )
+        ).doOnNext { selected.call(setOf()) }
                 .subscribe(elementsState)
 
+/*
+ * you can only select items in DELETE mode
+ */
 fun handleSelect(editMode: StateHolder<EditMode>, selected: StateHolder<Set<String>>, listClicks: Observable<Pair<Int, String>>): Subscription =
         /* When the edit mode is delete */
         editMode.
@@ -130,7 +137,7 @@ fun handleSelect(editMode: StateHolder<EditMode>, selected: StateHolder<Set<Stri
                             { delete -> listClicks.map { it.value1 } })
                 }
                 .flatMap { value ->
-                    /* Add or remove the clicked from the selected list */
+                    /* toggle selection state */
                     selected.first().map {
                         if (it.contains(value)) {
                             it.minus(value)

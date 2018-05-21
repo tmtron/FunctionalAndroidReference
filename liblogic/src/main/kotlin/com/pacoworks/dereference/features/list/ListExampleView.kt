@@ -46,8 +46,6 @@ interface ListExampleOutputView {
 
     fun listLongClicks(): Observable<Pair<Int, String>>
 
-    fun dragAndDropMoves(): Observable<Pair<Int, Int>>
-
     fun addClick(): Observable<None>
 
     fun deleteClick(): Observable<None>

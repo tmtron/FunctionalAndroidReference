@@ -30,7 +30,7 @@ class ListSubscribeSwitchEditTest {
         val selectedInitial = setOf<String>()
         val selected = createStateHolder(selectedInitial)
         val testSubscriber = TestSubscriber.create<Set<String>>()
-        handleOnSwitchEditState(editMode, selected)
+        handleEnterEditStateSelectLongClickedItem(editMode, selected)
         selected.subscribe(testSubscriber)
         /* Initial state */
         testSubscriber.assertValueCount(1)
@@ -53,7 +53,7 @@ class ListSubscribeSwitchEditTest {
         val selectedInitial = setOf(editId)
         val selected = createStateHolder(selectedInitial)
         val testSubscriber = TestSubscriber.create<Set<String>>()
-        handleOnSwitchEditState(editMode, selected)
+        handleEnterEditStateSelectLongClickedItem(editMode, selected)
         selected.subscribe(testSubscriber)
         /* Initial state */
         testSubscriber.assertValueCount(1)
